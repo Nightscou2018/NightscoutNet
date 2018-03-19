@@ -1,0 +1,15 @@
+D:\GIT\NightscoutNet\Monitor\bin\Debug\netcoreapp2.0\Monitor.deps.json
+D:\GIT\NightscoutNet\Monitor\bin\Debug\netcoreapp2.0\Monitor.runtimeconfig.json
+D:\GIT\NightscoutNet\Monitor\bin\Debug\netcoreapp2.0\Monitor.runtimeconfig.dev.json
+D:\GIT\NightscoutNet\Monitor\bin\Debug\netcoreapp2.0\Monitor.dll
+D:\GIT\NightscoutNet\Monitor\bin\Debug\netcoreapp2.0\Monitor.pdb
+D:\GIT\NightscoutNet\Monitor\obj\Debug\netcoreapp2.0\Monitor.csprojResolveAssemblyReference.cache
+D:\GIT\NightscoutNet\Monitor\obj\Debug\netcoreapp2.0\Monitor.csproj.CoreCompileInputs.cache
+D:\GIT\NightscoutNet\Monitor\obj\Debug\netcoreapp2.0\Monitor.AssemblyInfoInputs.cache
+D:\GIT\NightscoutNet\Monitor\obj\Debug\netcoreapp2.0\Monitor.AssemblyInfo.cs
+D:\GIT\NightscoutNet\Monitor\obj\Debug\netcoreapp2.0\Monitor.dll
+D:\GIT\NightscoutNet\Monitor\obj\Debug\netcoreapp2.0\Monitor.pdb
+d:\GIT\NightscoutNet\Monitor\bin\Debug\netcoreapp2.0\Common.dll
+d:\GIT\NightscoutNet\Monitor\bin\Debug\netcoreapp2.0\Model.dll
+d:\GIT\NightscoutNet\Monitor\bin\Debug\netcoreapp2.0\Common.pdb
+d:\GIT\NightscoutNet\Monitor\bin\Debug\netcoreapp2.0\Model.pdb

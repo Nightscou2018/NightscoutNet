@@ -1,0 +1,8 @@
+D:\GIT\NightscoutNet\Common\bin\Debug\netcoreapp2.0\Common.deps.json
+D:\GIT\NightscoutNet\Common\bin\Debug\netcoreapp2.0\Common.dll
+D:\GIT\NightscoutNet\Common\bin\Debug\netcoreapp2.0\Common.pdb
+D:\GIT\NightscoutNet\Common\obj\Debug\netcoreapp2.0\Common.csproj.CoreCompileInputs.cache
+D:\GIT\NightscoutNet\Common\obj\Debug\netcoreapp2.0\Common.AssemblyInfoInputs.cache
+D:\GIT\NightscoutNet\Common\obj\Debug\netcoreapp2.0\Common.AssemblyInfo.cs
+D:\GIT\NightscoutNet\Common\obj\Debug\netcoreapp2.0\Common.dll
+D:\GIT\NightscoutNet\Common\obj\Debug\netcoreapp2.0\Common.pdb

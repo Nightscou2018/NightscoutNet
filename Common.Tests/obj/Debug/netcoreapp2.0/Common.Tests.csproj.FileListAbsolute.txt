@@ -1,0 +1,16 @@
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.dll
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Microsoft.VisualStudio.TestPlatform.MSTestAdapter.PlatformServices.Interface.dll
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Microsoft.VisualStudio.TestPlatform.MSTestAdapter.PlatformServices.dll
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Common.Tests.deps.json
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Common.Tests.runtimeconfig.json
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Common.Tests.runtimeconfig.dev.json
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Common.Tests.dll
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Common.Tests.pdb
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Common.dll
+D:\GIT\NightscoutNet\Common.Tests\bin\Debug\netcoreapp2.0\Common.pdb
+D:\GIT\NightscoutNet\Common.Tests\obj\Debug\netcoreapp2.0\Common.Tests.csprojResolveAssemblyReference.cache
+D:\GIT\NightscoutNet\Common.Tests\obj\Debug\netcoreapp2.0\Common.Tests.csproj.CoreCompileInputs.cache
+D:\GIT\NightscoutNet\Common.Tests\obj\Debug\netcoreapp2.0\Common.Tests.AssemblyInfoInputs.cache
+D:\GIT\NightscoutNet\Common.Tests\obj\Debug\netcoreapp2.0\Common.Tests.AssemblyInfo.cs
+D:\GIT\NightscoutNet\Common.Tests\obj\Debug\netcoreapp2.0\Common.Tests.dll
+D:\GIT\NightscoutNet\Common.Tests\obj\Debug\netcoreapp2.0\Common.Tests.pdb
