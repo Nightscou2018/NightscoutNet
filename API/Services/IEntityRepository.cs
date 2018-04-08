@@ -17,6 +17,10 @@ namespace API.Services
 
     public interface IEntityRepository
     {
-        Task<List<BsonDocument>> List(EntityEnum entity, int count = 50);
+        Task<List<BsonDocument>> List(EntityEnum entity, int? count);
+
+        Task<BsonDocument> Get(EntityEnum entity, string id);
+
+        Task Put(EntityEnum entity, string id, BsonDocument doc);
     }
 }

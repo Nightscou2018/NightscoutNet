@@ -5,12 +5,15 @@ using System.Threading.Tasks;
 using API.Services;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
 
 namespace API.Controllers
 {
     public class ApiController : Controller
     {
+        private const string JSON_CONTENT_TYPE = "application/json";
         private IEntityRepository entityRepo;
+        JsonWriterSettings jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
 
         public ApiController(IEntityRepository entityRepo)
         {
@@ -18,9 +21,12 @@ namespace API.Controllers
         }
 
         [HttpGet("/api/{entity}")]
-        public async Task<IActionResult> Get(EntityEnum entity)
+        public async Task<IActionResult> Get(EntityEnum entity, int? count)
         {
-            var list = await entityRepo.List(entity);
+            if (entity == EntityEnum.undefined)
+                return NotFound();
+
+            var list = await entityRepo.List(entity, count);
             var bson = new BsonDocument();
 
             bson.Add("count", list.Count);
@@ -28,13 +34,25 @@ namespace API.Controllers
             var array = new BsonArray(list);
             bson.Add("items", array);
 
-            return Ok(bson.ToString());
+            return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
         }
 
         [HttpGet("/api/{entity}/{id}")]
-        public string Get(EntityEnum entity, int id)
+        public async Task<IActionResult> Get(EntityEnum entity, string id)
         {
-            return "value";
+            if (entity == EntityEnum.undefined)
+                return NotFound();
+
+            var bson = await entityRepo.Get(entity, id);
+
+            if (bson == null)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
+            }
         }
 
         [HttpPost("/api/{entity}")]
@@ -43,8 +61,16 @@ namespace API.Controllers
         }
 
         [HttpPut("/api/{entity}/{id}")]
-        public void Put(EntityEnum entity, int id, [FromBody]string value)
+        public async Task<IActionResult> Put(EntityEnum entity, string id, [FromBody]string value)
         {
+            if (entity == EntityEnum.undefined)
+                return NotFound();
+
+            var bson = BsonDocument.Parse(value);
+
+            await entityRepo.Put(entity, id, bson);
+
+            return Ok();
         }
 
         [HttpDelete("/api/{entity}/{id}")]
