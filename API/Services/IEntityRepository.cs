@@ -6,6 +6,13 @@ using System.Threading.Tasks;
 
 namespace API.Services
 {
+    public enum StatusEnum
+    {
+        New,
+        Modified,
+        Deleted
+    }
+
     public enum EntityEnum {
         undefined,
         devicestatus,
@@ -21,6 +28,10 @@ namespace API.Services
 
         Task<BsonDocument> Get(EntityEnum entity, string id);
 
-        Task Put(EntityEnum entity, string id, BsonDocument doc);
+        Task<ObjectId> Create(EntityEnum entity, BsonDocument bson);
+
+        Task<bool> Update(EntityEnum entity, BsonDocument doc);
+
+        Task<bool> Delete(EntityEnum entity, string id);
     }
 }

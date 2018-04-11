@@ -45,13 +45,37 @@ namespace API.Services
             return items.FirstOrDefault();
         }
 
-        public async Task Put(EntityEnum entity, string id, BsonDocument doc)
+        public async Task<ObjectId> Create(EntityEnum entity, BsonDocument doc)
         {
             var col = mongoDB.GetCollection<BsonDocument>(entity.ToString());
 
-            var filter_id = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(id));
+            await col.InsertOneAsync(doc);
+
+            var idElement = doc.GetElement("_id");
+
+            return idElement.Value.AsObjectId;
+        }
+
+        public async Task<bool> Update(EntityEnum entity, BsonDocument doc)
+        {
+            var col = mongoDB.GetCollection<BsonDocument>(entity.ToString());
+
+            var filter_id = Builders<BsonDocument>.Filter.Eq("_id", doc.GetValue("_id").AsObjectId);
 
             var result = await col.FindOneAndReplaceAsync(filter_id, doc);
+
+            return result != null;
+        }
+
+        public async Task<bool> Delete(EntityEnum entity, string id)
+        {
+            var col = mongoDB.GetCollection<BsonDocument>(entity.ToString());
+
+            var filter_id = Builders<BsonDocument>.Filter.Eq("_id", new ObjectId(id));
+
+            var result = await col.FindOneAndDeleteAsync(filter_id);
+
+            return result != null;
         }
     }
 }
