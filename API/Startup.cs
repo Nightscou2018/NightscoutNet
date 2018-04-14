@@ -37,6 +37,10 @@ namespace API
             }
 
             app.UseMvc();
+
+
+            var entityRepository = app.ApplicationServices.GetService<IEntityRepository>();
+            entityRepository.Init();
         }
     }
 }

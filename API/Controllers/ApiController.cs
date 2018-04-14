@@ -21,12 +21,12 @@ namespace API.Controllers
         }
 
         [HttpGet("/api/{entity}")]
-        public async Task<IActionResult> Get(EntityEnum entity, int? count)
+        public async Task<IActionResult> Get(EntityEnum entity, int? count, bool? includeDeleted, DateTime? fromModified)
         {
             if (entity == EntityEnum.undefined)
                 return NotFound();
 
-            var list = await entityRepo.List(entity, count);
+            var list = await entityRepo.List(entity, count, includeDeleted ?? false, fromModified);
             var bson = new BsonDocument();
 
             bson.Add("count", list.Count);

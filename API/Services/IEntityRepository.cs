@@ -24,7 +24,9 @@ namespace API.Services
 
     public interface IEntityRepository
     {
-        Task<List<BsonDocument>> List(EntityEnum entity, int? count);
+        void Init();
+
+        Task<List<BsonDocument>> List(EntityEnum entity, int? count, bool includeDeleted, DateTime? fromModified);
 
         Task<BsonDocument> Get(EntityEnum entity, string id);
 

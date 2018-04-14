@@ -85,7 +85,9 @@ namespace API.Tests
         private void ListProfiles()
         {
             var controller = new ApiController(entityRepo);
-            var result = controller.Get(EntityEnum.profile, count: 10).Result as ContentResult;
+            var result = controller.Get(
+                EntityEnum.profile, count: 10, includeDeleted: false, fromModified: null)
+                .Result as ContentResult;
             Assert.IsNotNull(result);
             Assert.AreEqual(result.ContentType, JSON_CONTENT_TYPE);
             Assert.IsFalse(string.IsNullOrWhiteSpace(result.Content));

@@ -21,8 +21,24 @@ namespace API.Services
             mongoDB = client.GetDatabase(this.mongoURL.DatabaseName);
         }
 
+        public void Init()
+        {
+            foreach (EntityEnum entity in Enum.GetValues(typeof(EntityEnum)))
+            {
+                if (entity != EntityEnum.undefined)
+                {
+                    var col = mongoDB.GetCollection<BsonDocument>(entity.ToString());
 
-        public async Task<List<BsonDocument>> List(EntityEnum entity, int? count)
+                    col.Indexes.CreateOne(new BsonDocument(Constants.MODIFIED_ELEMENT, 1), 
+                        new CreateIndexOptions() { Sparse = true });
+
+                    col.Indexes.CreateOne(new BsonDocument(Constants.STATUS_ELEMENT, 1),
+                        new CreateIndexOptions() { Sparse = true });
+                }
+            }
+        }
+
+        public async Task<List<BsonDocument>> List(EntityEnum entity, int? count, bool includeDeleted, DateTime? fromModified)
         {
             if (count == null)
             {
@@ -30,8 +46,34 @@ namespace API.Services
             }
 
             var col = mongoDB.GetCollection<BsonDocument>(entity.ToString());
-            var list = await col.Find(new BsonDocument()).Limit(count).ToListAsync();
+
+            var builder = Builders<BsonDocument>.Filter;
+            FilterDefinition<BsonDocument> filter = null;
+
+            if (!includeDeleted)
+            {
+                filter = AddFilter(filter, builder.Ne(Constants.STATUS_ELEMENT, StatusEnum.Deleted.ToString().ToLower()));
+            }
+
+            if (fromModified != null)
+            {
+                filter = AddFilter(filter, builder.Gte(Constants.MODIFIED_ELEMENT, fromModified.Value));
+            }
+
+            var list = await col.Find(filter ?? new BsonDocument())
+                .SortBy(bson => bson[Constants.MODIFIED_ELEMENT])
+                .Limit(count)
+                .ToListAsync();
             return list;
+        }
+
+        private FilterDefinition<BsonDocument> AddFilter(FilterDefinition<BsonDocument> filter, 
+            FilterDefinition<BsonDocument> newFilterClause)
+        {
+            return
+                filter == null 
+                    ? newFilterClause
+                    : filter & newFilterClause;
         }
 
         public async Task<BsonDocument> Get(EntityEnum entity, string id)
