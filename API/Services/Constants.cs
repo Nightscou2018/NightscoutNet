@@ -10,5 +10,7 @@ namespace API.Services
         public const string STATUS_ELEMENT = "status";
 
         public const string MODIFIED_ELEMENT = "modified";
+
+        public static readonly char[] PARAM_SEPARATORS = new char[] { ',', ';', '|' };
     }
 }

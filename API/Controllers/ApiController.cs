@@ -37,6 +37,32 @@ namespace API.Controllers
             return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
         }
 
+        [HttpGet("/api/list")]
+        public async Task<IActionResult> List(string entities, int? count, bool? includeDeleted, DateTime? fromModified)
+        {
+            if (string.IsNullOrWhiteSpace(entities))
+                return NotFound();
+
+            var bson = new BsonDocument();
+
+            foreach (var entityString in entities.Split(Constants.PARAM_SEPARATORS))
+            {
+                object entityObject;
+                if (!Enum.TryParse(typeof(EntityEnum), entityString, out entityObject))
+                {
+                    return NotFound();
+                }
+                var entity = (EntityEnum)entityObject;
+
+                var list = await entityRepo.List(entity, count, includeDeleted ?? false, fromModified);
+
+                var array = new BsonArray(list);
+                bson.Add(entity.ToString().ToLower(), array);
+            }           
+
+            return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
+        }
+
         [HttpGet("/api/{entity}/{id}")]
         public async Task<IActionResult> Get(EntityEnum entity, string id)
         {
