@@ -22,7 +22,7 @@ namespace API.Tests
 
         private string apiWebsiteURL = null;
         private string mongoURL = null;
-        private MongoEntityRepository entityRepo;
+        private MongoCollectionRepository collectionRepo;
 
         public ApiUT()
         {
@@ -32,7 +32,7 @@ namespace API.Tests
 
             apiWebsiteURL = config["ApiWebsiteURL"];
             mongoURL = config["MongoURL"];
-            entityRepo = new MongoEntityRepository(mongoURL);
+            collectionRepo = new MongoCollectionRepository(mongoURL);
         }
 
 
@@ -84,9 +84,9 @@ namespace API.Tests
 
         private void ListProfiles()
         {
-            var controller = new ApiController(entityRepo);
+            var controller = new ApiController(collectionRepo);
             var result = controller.Get(
-                EntityEnum.profile, count: 10, includeDeleted: false, fromModified: null)
+                CollectionEnum.profile, count: 10, includeDeleted: false, fromModified: null)
                 .Result as ContentResult;
             Assert.IsNotNull(result);
             Assert.AreEqual(result.ContentType, JSON_CONTENT_TYPE);
@@ -135,7 +135,7 @@ namespace API.Tests
             client.BaseUrl = new Uri(apiWebsiteURL);
 
             var request = new RestRequest($"api/entries", Method.POST);
-            request.AddJsonBody(clone.ToJson(jsonWriterSettings));
+            request.AddBody(clone.ToJson(jsonWriterSettings));
             var response = client.Execute(request);
 
             Assert.IsTrue(response.IsSuccessful);

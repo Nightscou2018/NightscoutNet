@@ -25,7 +25,7 @@ namespace API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddSingleton<IEntityRepository>(s => new MongoEntityRepository(Configuration["MongoURL"]));
+            services.AddSingleton<ICollectionRepository>(s => new MongoCollectionRepository(Configuration["MongoURL"]));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -39,7 +39,7 @@ namespace API
             app.UseMvc();
 
 
-            var entityRepository = app.ApplicationServices.GetService<IEntityRepository>();
+            var entityRepository = app.ApplicationServices.GetService<ICollectionRepository>();
             entityRepository.Init();
         }
     }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using API.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -12,21 +14,21 @@ namespace API.Controllers
     public class ApiController : Controller
     {
         private const string JSON_CONTENT_TYPE = "application/json";
-        private IEntityRepository entityRepo;
+        private ICollectionRepository collectionRepo;
         JsonWriterSettings jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
 
-        public ApiController(IEntityRepository entityRepo)
+        public ApiController(ICollectionRepository collectionRepo)
         {
-            this.entityRepo = entityRepo;
+            this.collectionRepo = collectionRepo;
         }
 
-        [HttpGet("/api/{entity}")]
-        public async Task<IActionResult> Get(EntityEnum entity, int? count, bool? includeDeleted, DateTime? fromModified)
+        [HttpGet("/api/{collection}")]
+        public async Task<IActionResult> Get(CollectionEnum collection, int? count, bool? includeDeleted, DateTime? fromModified)
         {
-            if (entity == EntityEnum.undefined)
+            if (collection == CollectionEnum.undefined)
                 return NotFound();
 
-            var list = await entityRepo.List(entity, count, includeDeleted ?? false, fromModified);
+            var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromModified);
             var bson = new BsonDocument();
 
             bson.Add("count", list.Count);
@@ -38,40 +40,40 @@ namespace API.Controllers
         }
 
         [HttpGet("/api/list")]
-        public async Task<IActionResult> List(string entities, int? count, bool? includeDeleted, DateTime? fromModified)
+        public async Task<IActionResult> List(string collections, int? count, bool? includeDeleted, DateTime? fromModified)
         {
-            if (string.IsNullOrWhiteSpace(entities))
+            if (string.IsNullOrWhiteSpace(collections))
                 return NotFound();
 
             var bson = new BsonDocument();
 
-            foreach (var entityString in entities.Split(Constants.PARAM_SEPARATORS))
+            foreach (var colString in collections.Split(Const.PARAM_SEPARATORS))
             {
-                object entityObject;
-                if (!Enum.TryParse(typeof(EntityEnum), entityString, out entityObject))
+                object colObject;
+                if (!Enum.TryParse(typeof(CollectionEnum), colString, out colObject))
                 {
                     return NotFound();
                 }
-                var entity = (EntityEnum)entityObject;
+                var collection = (CollectionEnum)colObject;
 
-                var list = await entityRepo.List(entity, count, includeDeleted ?? false, fromModified);
+                var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromModified);
 
                 var array = new BsonArray(list);
-                bson.Add(entity.ToString().ToLower(), array);
-            }           
+                bson.Add(collection.ToString().ToLower(), array);
+            }
 
             return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
         }
 
-        [HttpGet("/api/{entity}/{id}")]
-        public async Task<IActionResult> Get(EntityEnum entity, string id)
+        [HttpGet("/api/{collection}/{id}")]
+        public async Task<IActionResult> Get(CollectionEnum collection, string id)
         {
             try
             {
-                if (entity == EntityEnum.undefined)
+                if (collection == CollectionEnum.undefined)
                     return NotFound();
 
-                var bson = await entityRepo.Get(entity, id);
+                var bson = await collectionRepo.Get(collection, id);
 
                 if (bson == null)
                 {
@@ -88,19 +90,27 @@ namespace API.Controllers
             }
         }
 
-        [HttpPost("/api/{entity}")]
-        public async Task<IActionResult> Post(EntityEnum entity, [FromBody]string value)
+        [HttpPost("/api/{collection}")]
+        public async Task<IActionResult> Post(CollectionEnum collection)
         {
             try
             {
-                if (entity == EntityEnum.undefined)
+                if (collection == CollectionEnum.undefined)
                     return NotFound();
 
-                var bson = BsonDocument.Parse(value);
+                // TODO authorization
+
+                string json = null;
+                using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
+                {
+                    json = await reader.ReadToEndAsync();
+                }
+
+                var bson = BsonDocument.Parse(json);
 
                 SetStatus(bson, StatusEnum.New);
 
-                var objectId = await entityRepo.Create(entity, bson);
+                var objectId = await collectionRepo.Create(collection, bson);
 
                 var idDoc = new BsonDocument();
                 idDoc.Add("_id", objectId);
@@ -113,19 +123,21 @@ namespace API.Controllers
             }
         }
 
-        [HttpPut("/api/{entity}")]
-        public async Task<IActionResult> Put(EntityEnum entity, [FromBody]string value)
+        [HttpPut("/api/{collection}")]
+        public async Task<IActionResult> Put(CollectionEnum collection, [FromBody]string value)
         {
             try
             {
-                if (entity == EntityEnum.undefined)
+                if (collection == CollectionEnum.undefined)
                     return NotFound();
+
+                // TODO authorization
 
                 var bson = BsonDocument.Parse(value);
 
                 SetStatus(bson, StatusEnum.Modified);
 
-                if (!await entityRepo.Update(entity, bson))
+                if (!await collectionRepo.Update(collection, bson))
                 {
                     return NotFound();
                 }
@@ -139,31 +151,19 @@ namespace API.Controllers
         }
 
 
-        [HttpDelete("/api/{entity}/{id}")]
-        public async Task<IActionResult> Delete(EntityEnum entity, string id, bool force = false)
+        [HttpDelete("/api/{collection}/{id}")]
+        public async Task<IActionResult> Delete(CollectionEnum collection, string id, bool force = false)
         {
             try
             {
-                if (entity == EntityEnum.undefined)
+                if (collection == CollectionEnum.undefined)
                     return NotFound();
 
-                if (force)
-                {
-                    if (!await entityRepo.Delete(entity, id))
-                    {
-                        return NotFound();
-                    }
-                }
-                else
-                {
-                    var bson = await entityRepo.Get(entity, id);
+                // TODO authorization
 
-                    SetStatus(bson, StatusEnum.Deleted);
-
-                    if (!await entityRepo.Update(entity, bson))
-                    {
-                        return NotFound();
-                    }
+                if (!await collectionRepo.Delete(collection, id))
+                {
+                    return NotFound();
                 }
 
                 return Ok();
@@ -177,10 +177,10 @@ namespace API.Controllers
 
         private void SetStatus(BsonDocument bson, StatusEnum status)
         {
-            BsonElement elStatus = new BsonElement(Constants.STATUS_ELEMENT, status.ToString().ToLower());
+            BsonElement elStatus = new BsonElement(Const.STATUS_ELEMENT, status.ToString().ToLower());
             bson.SetElement(elStatus);
 
-            BsonElement elModified = new BsonElement(Constants.MODIFIED_ELEMENT, DateTime.Now);
+            BsonElement elModified = new BsonElement(Const.MODIFIED_ELEMENT, DateTime.Now);
             bson.SetElement(elModified);
         }
     }
