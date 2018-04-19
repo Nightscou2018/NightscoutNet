@@ -39,8 +39,8 @@ namespace API.Controllers
             return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
         }
 
-        [HttpGet("/api/list")]
-        public async Task<IActionResult> List(string collections, int? count, bool? includeDeleted, DateTime? fromModified)
+        [HttpGet("/api/delta")]
+        public async Task<IActionResult> Delta(string collections, int? count, bool? includeDeleted, DateTime? fromModified)
         {
             if (string.IsNullOrWhiteSpace(collections))
                 return NotFound();

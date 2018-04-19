@@ -59,7 +59,7 @@ namespace API.Services
 
             if (fromModified != null)
             {
-                filter = AddFilter(filter, builder.Gte(Const.MODIFIED_ELEMENT, fromModified.Value));
+                filter = AddFilter(filter, builder.Gt(Const.MODIFIED_ELEMENT, fromModified.Value));
             }
 
             var list = await col.Find(filter ?? new BsonDocument())
