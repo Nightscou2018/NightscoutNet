@@ -69,7 +69,22 @@ namespace API.Services
 
             if (includeDeleted)
             {
-                // TODO list deleted and merge
+                var colDeleted = mongoDB.GetCollection<BsonDocument>(CollectionEnum.deleted.ToString());
+
+                filter = AddFilter(filter, builder.Eq(Const.COLLECTION_ELEMENT, collection.ToString()));
+
+                var listDeleted = await colDeleted.Find(filter ?? new BsonDocument())
+                  .SortBy(bson => bson[Const.MODIFIED_ELEMENT])
+                    .Limit(count)
+                    .Project(bson => bson.GetElement(Const.DELETED_ELEMENT))
+                    .ToListAsync();
+
+                foreach (var valueDeleted in listDeleted)
+                {
+                    var bsonDeleted = valueDeleted.Value.AsBsonDocument;
+
+                    list.Add(bsonDeleted);
+                }
             }
 
             return list;
@@ -141,7 +156,7 @@ namespace API.Services
             var deletionRecord = new BsonDocument {
                 { Const.ID, documentToDelete.GetValue(Const.ID) },
                 { Const.COLLECTION_ELEMENT, collection.ToString() },
-                { "deleted", documentToDelete },
+                { Const.DELETED_ELEMENT, documentToDelete },
                 { Const.STATUS_ELEMENT, StatusEnum.New.ToString().ToLower() },
                 { Const.MODIFIED_ELEMENT, DateTime.Now }
             };

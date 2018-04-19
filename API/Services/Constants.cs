@@ -16,6 +16,8 @@ namespace API.Services
 
         public static string COLLECTION_ELEMENT = "collection";
 
+        public const string DELETED_ELEMENT = "deleted";
+
         public static readonly char[] PARAM_SEPARATORS = new char[] { ',', ';', '|' };
     }
 }
