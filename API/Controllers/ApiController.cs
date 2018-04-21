@@ -55,7 +55,7 @@ namespace API.Controllers
             {
                 foreach (CollectionEnum collection in Enum.GetValues(typeof(CollectionEnum)))
                 {
-                    if (collection != CollectionEnum.deleted)
+                    if (collection != CollectionEnum.deleted && collection != CollectionEnum.undefined)
                     {
                         var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromDate);
 
@@ -128,8 +128,6 @@ namespace API.Controllers
 
                 var bson = BsonDocument.Parse(json);
 
-                SetStatus(bson, StatusEnum.New);
-
                 var objectId = await collectionRepo.Create(collection, bson);
 
                 var idDoc = new BsonDocument();
@@ -154,8 +152,6 @@ namespace API.Controllers
                 // TODO authorization
 
                 var bson = BsonDocument.Parse(value);
-
-                SetStatus(bson, StatusEnum.Modified);
 
                 if (!await collectionRepo.Update(collection, bson))
                 {
@@ -192,16 +188,6 @@ namespace API.Controllers
             {
                 return BadRequest(ex);
             }
-        }
-
-
-        private void SetStatus(BsonDocument bson, StatusEnum status)
-        {
-            BsonElement elStatus = new BsonElement(Const.STATUS_ELEMENT, status.ToString().ToLower());
-            bson.SetElement(elStatus);
-
-            BsonElement elModified = new BsonElement(Const.MODIFIED_ELEMENT, DateTime.Now);
-            bson.SetElement(elModified);
         }
     }
 }

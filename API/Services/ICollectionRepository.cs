@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace API.Services
 {
-    public enum StatusEnum
+    public enum StateEnum
     {
         New,
         Modified,
@@ -31,7 +31,7 @@ namespace API.Services
 
         Task<BsonDocument> Get(CollectionEnum entity, string id);
 
-        Task<ObjectId> Create(CollectionEnum entity, BsonDocument bson);
+        Task<string> Create(CollectionEnum entity, BsonDocument bson);
 
         Task<bool> Update(CollectionEnum entity, BsonDocument doc);
 
