@@ -86,7 +86,7 @@ namespace API.Tests
         {
             var controller = new ApiController(collectionRepo);
             var result = controller.Get(
-                CollectionEnum.profile, count: 10, includeDeleted: false, fromModified: null)
+                CollectionEnum.profile, count: 10, includeDeleted: false, fromDate: null)
                 .Result as ContentResult;
             Assert.IsNotNull(result);
             Assert.AreEqual(result.ContentType, JSON_CONTENT_TYPE);

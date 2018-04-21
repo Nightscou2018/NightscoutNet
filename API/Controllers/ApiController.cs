@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using API.Helpers;
 using API.Services;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
@@ -23,12 +24,14 @@ namespace API.Controllers
         }
 
         [HttpGet("/api/{collection}")]
-        public async Task<IActionResult> Get(CollectionEnum collection, int? count, bool? includeDeleted, DateTime? fromModified)
+        public async Task<IActionResult> Get(CollectionEnum collection, int? count, bool? includeDeleted, DateTime? fromDate, long? fromMs)
         {
             if (collection == CollectionEnum.undefined)
                 return NotFound();
 
-            var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromModified);
+            fromDate = fromDate ?? DateTimeHelper.FromEpoch(fromMs) ?? Const.MIN_DATE;
+
+            var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromDate);
             var bson = new BsonDocument();
 
             bson.Add("count", list.Count);
@@ -40,26 +43,43 @@ namespace API.Controllers
         }
 
         [HttpGet("/api/delta")]
-        public async Task<IActionResult> Delta(string collections, int? count, bool? includeDeleted, DateTime? fromModified)
+        public async Task<IActionResult> Delta(string collections, int? count, bool? includeDeleted, DateTime? fromDate, long? fromMs)
         {
-            if (string.IsNullOrWhiteSpace(collections))
-                return NotFound();
-
             var bson = new BsonDocument();
 
-            foreach (var colString in collections.Split(Const.PARAM_SEPARATORS))
+            includeDeleted = includeDeleted ?? true;
+            count = count ?? 1000;
+            fromDate = fromDate ?? DateTimeHelper.FromEpoch(fromMs) ?? Const.MIN_DATE;
+
+            if (string.IsNullOrWhiteSpace(collections) || collections.ToLower().Trim() == "all")
             {
-                object colObject;
-                if (!Enum.TryParse(typeof(CollectionEnum), colString, out colObject))
+                foreach (CollectionEnum collection in Enum.GetValues(typeof(CollectionEnum)))
                 {
-                    return NotFound();
+                    if (collection != CollectionEnum.deleted)
+                    {
+                        var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromDate);
+
+                        var array = new BsonArray(list);
+                        bson.Add(collection.ToString().ToLower(), array);
+                    }
                 }
-                var collection = (CollectionEnum)colObject;
+            }
+            else
+            {
+                foreach (var colString in collections.Split(Const.PARAM_SEPARATORS))
+                {
+                    object colObject;
+                    if (!Enum.TryParse(typeof(CollectionEnum), colString, out colObject))
+                    {
+                        return NotFound();
+                    }
+                    var collection = (CollectionEnum)colObject;
 
-                var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromModified);
+                    var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromDate);
 
-                var array = new BsonArray(list);
-                bson.Add(collection.ToString().ToLower(), array);
+                    var array = new BsonArray(list);
+                    bson.Add(collection.ToString().ToLower(), array);
+                }
             }
 
             return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);

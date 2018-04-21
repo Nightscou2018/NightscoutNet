@@ -19,5 +19,7 @@ namespace API.Services
         public const string DELETED_ELEMENT = "deleted";
 
         public static readonly char[] PARAM_SEPARATORS = new char[] { ',', ';', '|' };
+
+        public static readonly DateTime MIN_DATE = new DateTime(1900, 1, 1);
     }
 }
