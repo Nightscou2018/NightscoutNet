@@ -24,14 +24,15 @@ namespace API.Controllers
         }
 
         [HttpGet("/api/{collection}")]
-        public async Task<IActionResult> Get(CollectionEnum collection, int? count, bool? includeDeleted, DateTime? fromDate, long? fromMs)
+        public async Task<IActionResult> Get(CollectionEnum collection, int? count, DateTime? fromDate, long? fromMs)
         {
             if (collection == CollectionEnum.undefined)
                 return NotFound();
 
             fromDate = fromDate ?? DateTimeHelper.FromEpoch(fromMs) ?? Const.MIN_DATE;
+            count = count ?? Const.DEFAULT_COUNT;
 
-            var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromDate);
+            var list = await collectionRepo.List(collection, fromDate, count, includeDeleted: false);
             var bson = new BsonDocument();
 
             bson.Add("count", list.Count);
@@ -42,13 +43,12 @@ namespace API.Controllers
             return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
         }
 
-        [HttpGet("/api/delta")]
-        public async Task<IActionResult> Delta(string collections, int? count, bool? includeDeleted, DateTime? fromDate, long? fromMs)
+        [HttpGet("/api/delta/{fromMs}")]
+        public async Task<IActionResult> Delta(string collections, int? count, DateTime? fromDate, long? fromMs)
         {
             var bson = new BsonDocument();
 
-            includeDeleted = includeDeleted ?? true;
-            count = count ?? 1000;
+            count = count ?? Const.DEFAULT_COUNT;
             fromDate = fromDate ?? DateTimeHelper.FromEpoch(fromMs) ?? Const.MIN_DATE;
 
             if (string.IsNullOrWhiteSpace(collections) || collections.ToLower().Trim() == "all")
@@ -57,7 +57,7 @@ namespace API.Controllers
                 {
                     if (collection != CollectionEnum.deleted && collection != CollectionEnum.undefined)
                     {
-                        var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromDate);
+                        var list = await collectionRepo.List(collection, fromDate, count, includeDeleted: false);
 
                         var array = new BsonArray(list);
                         bson.Add(collection.ToString().ToLower(), array);
@@ -75,7 +75,7 @@ namespace API.Controllers
                     }
                     var collection = (CollectionEnum)colObject;
 
-                    var list = await collectionRepo.List(collection, count, includeDeleted ?? false, fromDate);
+                    var list = await collectionRepo.List(collection, fromDate, count, includeDeleted: false);
 
                     var array = new BsonArray(list);
                     bson.Add(collection.ToString().ToLower(), array);

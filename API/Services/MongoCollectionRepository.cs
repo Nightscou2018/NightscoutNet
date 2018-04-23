@@ -39,16 +39,13 @@ namespace API.Services
 
                     col.Indexes.CreateOne(new BsonDocument(Const.MODIFIED_ELEMENT, 1),
                         new CreateIndexOptions() { Sparse = true });
-
-                    col.Indexes.CreateOne(new BsonDocument(Const.STATE_ELEMENT, 1),
-                        new CreateIndexOptions() { Sparse = true });
                 }
             }
         }
 
-        public async Task<List<BsonDocument>> List(CollectionEnum collection, int? count, bool includeDeleted, DateTime? fromModified)
+        public async Task<List<BsonDocument>> List(CollectionEnum collection, DateTime? fromModified, int? count, bool includeDeleted)
         {
-            count = count ?? 50;
+            count = count ?? Const.DEFAULT_COUNT;
 
             List<BsonDocument> list = null;
             var col = mongoDB.GetCollection<BsonDocument>(collection.ToString());
@@ -130,7 +127,10 @@ namespace API.Services
                         if (collection == CollectionEnum.entries)
                         {
                             long dateEpoch = (long)fallbackDoc.GetValue(Const.DATE_ELEMENT).AsDouble;
-                            fallbackDoc.Add(Const.MODIFIED_ELEMENT, dateEpoch);
+                            if (!fallbackDoc.Contains(Const.MODIFIED_ELEMENT))
+                            {
+                                fallbackDoc.Add(Const.MODIFIED_ELEMENT, dateEpoch);
+                            }
                         }
                         else
                         {
@@ -139,12 +139,10 @@ namespace API.Services
                             if (!DateTime.TryParse(createdAtString, out createdAt))
                                 continue;
 
-                            fallbackDoc.Add(Const.MODIFIED_ELEMENT, DateTimeHelper.ToEpoch(createdAt));
-                        }
-
-                        if (!fallbackDoc.Contains(Const.STATE_ELEMENT))
-                        {
-                            fallbackDoc.Add(Const.STATE_ELEMENT, StateEnum.New.ToString().ToLower());
+                            if (!fallbackDoc.Contains(Const.MODIFIED_ELEMENT))
+                            {
+                                fallbackDoc.Add(Const.MODIFIED_ELEMENT, DateTimeHelper.ToEpoch(createdAt));
+                            }
                         }
 
                         list.Add(fallbackDoc);
@@ -204,7 +202,7 @@ namespace API.Services
 
         public async Task<string> Create(CollectionEnum collection, BsonDocument doc)
         {
-            SetStatus(doc, StateEnum.New);
+            SetModified(doc);
 
             var col = mongoDB.GetCollection<BsonDocument>(collection.ToString());
 
@@ -217,7 +215,7 @@ namespace API.Services
 
         public async Task<bool> Update(CollectionEnum collection, BsonDocument doc)
         {
-            SetStatus(doc, StateEnum.Modified);
+            SetModified(doc);
 
             var col = mongoDB.GetCollection<BsonDocument>(collection.ToString());
 
@@ -247,13 +245,12 @@ namespace API.Services
 
             SimplifyId(documentToDelete);
 
-            SetStatus(documentToDelete, StateEnum.Deleted);
+            SetModified(documentToDelete);
 
             var deletionRecord = new BsonDocument {
                 { Const.ID, objectId },
                 { Const.COLLECTION_ELEMENT, collection.ToString() },
                 { Const.DELETED_ELEMENT, documentToDelete },
-                { Const.STATE_ELEMENT, StateEnum.New.ToString().ToLower() },
                 { Const.MODIFIED_ELEMENT, documentToDelete.GetValue(Const.MODIFIED_ELEMENT) }
             };
 
@@ -284,11 +281,8 @@ namespace API.Services
                     : filter & newFilterClause;
         }
 
-        private void SetStatus(BsonDocument bson, StateEnum status)
+        private void SetModified(BsonDocument bson)
         {
-            BsonElement elStatus = new BsonElement(Const.STATE_ELEMENT, status.ToString().ToLower());
-            bson.SetElement(elStatus);
-
             BsonElement elModified = new BsonElement(Const.MODIFIED_ELEMENT, DateTimeHelper.ToEpoch(DateTime.Now));
             bson.SetElement(elModified);
         }

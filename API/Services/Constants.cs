@@ -10,7 +10,7 @@ namespace API.Services
     {
         public const string ID = "_id";
 
-        public const string STATE_ELEMENT = "state";
+        public const int DEFAULT_COUNT = 100;
 
         public const string MODIFIED_ELEMENT = "modified";
 

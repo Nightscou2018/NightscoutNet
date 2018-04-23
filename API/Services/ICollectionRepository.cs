@@ -6,13 +6,6 @@ using System.Threading.Tasks;
 
 namespace API.Services
 {
-    public enum StateEnum
-    {
-        New,
-        Modified,
-        Deleted
-    }
-
     public enum CollectionEnum {
         undefined,
         devicestatus,
@@ -27,7 +20,7 @@ namespace API.Services
     {
         void Init();
 
-        Task<List<BsonDocument>> List(CollectionEnum entity, int? count, bool includeDeleted, DateTime? fromModified);
+        Task<List<BsonDocument>> List(CollectionEnum entity, DateTime? fromModified, int? count, bool includeDeleted);
 
         Task<BsonDocument> Get(CollectionEnum entity, string id);
 
