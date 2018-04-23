@@ -14,6 +14,8 @@ namespace API.Services
 
         public const string MODIFIED_ELEMENT = "modified";
 
+        public const string UPDATED_ELEMENT = "updated";
+
         public const string CREATED_AT_ELEMENT = "created_at";
 
         public const string DATE_ELEMENT = "date";

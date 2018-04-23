@@ -216,6 +216,7 @@ namespace API.Services
         public async Task<bool> Update(CollectionEnum collection, BsonDocument doc)
         {
             SetModified(doc);
+            SetUpdated(doc);
 
             var col = mongoDB.GetCollection<BsonDocument>(collection.ToString());
 
@@ -246,6 +247,7 @@ namespace API.Services
             SimplifyId(documentToDelete);
 
             SetModified(documentToDelete);
+            SetDeleted(documentToDelete);
 
             var deletionRecord = new BsonDocument {
                 { Const.ID, objectId },
@@ -283,8 +285,20 @@ namespace API.Services
 
         private void SetModified(BsonDocument bson)
         {
-            BsonElement elModified = new BsonElement(Const.MODIFIED_ELEMENT, DateTimeHelper.ToEpoch(DateTime.Now));
-            bson.SetElement(elModified);
+            BsonElement el = new BsonElement(Const.MODIFIED_ELEMENT, DateTimeHelper.ToEpoch(DateTime.Now));
+            bson.SetElement(el);
+        }
+
+        private void SetUpdated(BsonDocument bson)
+        {
+            BsonElement el = new BsonElement(Const.UPDATED_ELEMENT, DateTimeHelper.ToEpoch(DateTime.Now));
+            bson.SetElement(el);
+        }
+
+        private void SetDeleted(BsonDocument bson)
+        {
+            BsonElement el = new BsonElement(Const.DELETED_ELEMENT, DateTimeHelper.ToEpoch(DateTime.Now));
+            bson.SetElement(el);
         }
     }
 }
