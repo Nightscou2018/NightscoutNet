@@ -124,10 +124,10 @@ namespace API.Services
                     {
                         UnpackId(fallbackDoc);
 
-                        var modified = GetModifiedEpoch(collection, fallbackDoc);
-                        if (modified.HasValue)
+                        var created = GetCreatedEpoch(collection, fallbackDoc);
+                        if (created.HasValue)
                         {
-                            SetDate(fallbackDoc, Const.MODIFIED_ELEMENT, modified);
+                            SetDate(fallbackDoc, Const.MODIFIED_ELEMENT, created);
                         }
                         list.Add(fallbackDoc);
                     }
@@ -183,10 +183,10 @@ namespace API.Services
 
             UnpackId(doc);
 
-            var modified = GetModifiedEpoch(collection, doc);
-            if (modified.HasValue)
+            var created = GetCreatedEpoch(collection, doc);
+            if (created.HasValue)
             {
-                SetDate(doc, Const.MODIFIED_ELEMENT, modified);
+                SetDate(doc, Const.MODIFIED_ELEMENT, created);
             }
 
             return doc;
@@ -207,7 +207,7 @@ namespace API.Services
 
         public async Task<bool> Update(CollectionEnum collection, BsonDocument doc)
         {
-            var modified = GetModifiedEpoch(collection, doc);
+            var modified = GetCreatedEpoch(collection, doc);
             if (modified.HasValue)
             {
                 SetDate(doc, Const.CREATED_ELEMENT, modified);
@@ -244,13 +244,13 @@ namespace API.Services
 
             UnpackId(documentToDelete);
 
-            var modified = GetModifiedEpoch(collection, documentToDelete);
-            if (modified.HasValue)
+            var created = GetCreatedEpoch(collection, documentToDelete);
+            if (created.HasValue && !documentToDelete.Contains(Const.CREATED_ELEMENT))
             {
-                SetDate(documentToDelete, Const.DELETED_ELEMENT, modified);
+                SetDate(documentToDelete, Const.CREATED_ELEMENT, created);
             }
-
             SetDate(documentToDelete, Const.MODIFIED_ELEMENT, DateTime.Now);
+            SetDate(documentToDelete, Const.DELETED_ELEMENT, DateTime.Now);
 
             var deletionRecord = new BsonDocument {
                 { Const.ID, objectId },
@@ -299,8 +299,13 @@ namespace API.Services
             }
         }
 
-        private long? GetModifiedEpoch(CollectionEnum collection, BsonDocument doc)
+        private long? GetCreatedEpoch(CollectionEnum collection, BsonDocument doc)
         {
+            if (doc.Contains(Const.CREATED_ELEMENT))
+            {
+                return doc[Const.CREATED_ELEMENT].AsInt64;
+            }
+
             if (doc.Contains(Const.MODIFIED_ELEMENT))
             {
                 return doc[Const.MODIFIED_ELEMENT].AsInt64;
