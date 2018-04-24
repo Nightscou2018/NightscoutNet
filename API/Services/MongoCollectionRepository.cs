@@ -317,7 +317,7 @@ namespace API.Services
                 DateTime createdAt;
                 if (DateTime.TryParse(createdAtString, out createdAt))
                 {
-                    return DateTimeHelper.ToEpoch(createdAt);
+                    return DateTimeHelper.ToEpoch(createdAt.ToUniversalTime());
                 }
             }
 

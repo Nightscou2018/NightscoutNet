@@ -26,6 +26,8 @@ namespace API.Controllers
         [HttpGet("/api/{collection}")]
         public async Task<IActionResult> Get(CollectionEnum collection, int? count, DateTime? fromDate, long? fromMs)
         {
+            // TODO authorization
+
             if (collection == CollectionEnum.undefined)
                 return NotFound();
 
@@ -43,46 +45,58 @@ namespace API.Controllers
             return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
         }
 
-        [HttpGet("/api/delta/{fromMs}")]
-        public async Task<IActionResult> Delta(string collections, int? count, DateTime? fromDate, long? fromMs)
+        [HttpPost("/api/delta")]
+        public async Task<IActionResult> Delta(int? count)
         {
-            var bson = new BsonDocument();
-
-            count = count ?? Const.DEFAULT_COUNT;
-            fromDate = fromDate ?? DateTimeHelper.FromEpoch(fromMs) ?? Const.MIN_DATE;
-
-            if (string.IsNullOrWhiteSpace(collections) || collections.ToLower().Trim() == "all")
+            try
             {
-                foreach (CollectionEnum collection in Enum.GetValues(typeof(CollectionEnum)))
-                {
-                    if (collection != CollectionEnum.deleted && collection != CollectionEnum.undefined)
-                    {
-                        var list = await collectionRepo.List(collection, fromDate, count, includeDeleted: true);
+                // TODO authorization
 
-                        var array = new BsonArray(list);
-                        bson.Add(collection.ToString().ToLower(), array);
+                var outBson = new BsonDocument();
+                count = count ?? Const.DEFAULT_COUNT;
+
+                BsonDocument inBson;
+                if (!BsonDocument.TryParse(await ReadBody(), out inBson))
+                {
+                    return BadRequest();
+                }
+
+                foreach (var inElement in inBson.Elements)
+                {
+                    CollectionEnum collection;
+                    long fromMs;
+                    int? specificCount = null;
+                    try
+                    {
+                        collection = (CollectionEnum)Enum.Parse(typeof(CollectionEnum), inElement.Name);
+                        var colParams = inElement.Value.AsBsonDocument;
+                        fromMs = colParams.GetValue(Const.FROM).AsInt64;
+                        if (colParams.Contains(Const.COUNT))
+                        {
+                            specificCount = colParams.GetValue(Const.COUNT).AsInt32;
+                        }
+                    }
+                    catch
+                    {
+                        return BadRequest();
+                    }
+
+                    var list = await collectionRepo.List(collection, DateTimeHelper.FromEpoch(fromMs), 
+                        specificCount ?? count, includeDeleted: true);
+
+                    if (list.Count > 0)
+                    {
+                        var outElement = new BsonDocument { { collection.ToString(), new BsonArray(list) } };
+                        outBson.AddRange(outElement);
                     }
                 }
+
+                return Content(outBson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
             }
-            else
+            catch (Exception ex)
             {
-                foreach (var colString in collections.Split(Const.PARAM_SEPARATORS))
-                {
-                    object colObject;
-                    if (!Enum.TryParse(typeof(CollectionEnum), colString, out colObject))
-                    {
-                        return NotFound();
-                    }
-                    var collection = (CollectionEnum)colObject;
-
-                    var list = await collectionRepo.List(collection, fromDate, count, includeDeleted: true);
-
-                    var array = new BsonArray(list);
-                    bson.Add(collection.ToString().ToLower(), array);
-                }
+                return BadRequest(ex);
             }
-
-            return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
         }
 
         [HttpGet("/api/{collection}/{id}")]
@@ -92,6 +106,8 @@ namespace API.Controllers
             {
                 if (collection == CollectionEnum.undefined)
                     return NotFound();
+
+                // TODO authorization
 
                 var bson = await collectionRepo.Get(collection, id);
 
@@ -120,13 +136,7 @@ namespace API.Controllers
 
                 // TODO authorization
 
-                string json = null;
-                using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
-                {
-                    json = await reader.ReadToEndAsync();
-                }
-
-                var bson = BsonDocument.Parse(json);
+                var bson = BsonDocument.Parse(await ReadBody());
 
                 var objectId = await collectionRepo.Create(collection, bson);
 
@@ -151,13 +161,7 @@ namespace API.Controllers
 
                 // TODO authorization
 
-                string json = null;
-                using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
-                {
-                    json = await reader.ReadToEndAsync();
-                }
-
-                var bson = BsonDocument.Parse(json);
+                var bson = BsonDocument.Parse(await ReadBody());
 
                 if (!await collectionRepo.Update(collection, bson))
                 {
@@ -193,6 +197,15 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ex);
+            }
+        }
+
+
+        private async Task<string> ReadBody()
+        {
+            using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
+            {
+                return await reader.ReadToEndAsync();
             }
         }
     }

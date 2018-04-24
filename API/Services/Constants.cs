@@ -18,6 +18,10 @@ namespace API.Services
 
         public const string DELETED_ELEMENT = "deleted";
 
+        public const string FROM = "from";
+
+        public const string COUNT = "count";
+
         public const string CREATED_AT_ELEMENT = "created_at";
 
         public const string DATE_ELEMENT = "date";
