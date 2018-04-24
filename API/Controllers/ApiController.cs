@@ -57,7 +57,7 @@ namespace API.Controllers
                 {
                     if (collection != CollectionEnum.deleted && collection != CollectionEnum.undefined)
                     {
-                        var list = await collectionRepo.List(collection, fromDate, count, includeDeleted: false);
+                        var list = await collectionRepo.List(collection, fromDate, count, includeDeleted: true);
 
                         var array = new BsonArray(list);
                         bson.Add(collection.ToString().ToLower(), array);
@@ -75,7 +75,7 @@ namespace API.Controllers
                     }
                     var collection = (CollectionEnum)colObject;
 
-                    var list = await collectionRepo.List(collection, fromDate, count, includeDeleted: false);
+                    var list = await collectionRepo.List(collection, fromDate, count, includeDeleted: true);
 
                     var array = new BsonArray(list);
                     bson.Add(collection.ToString().ToLower(), array);
@@ -142,7 +142,7 @@ namespace API.Controllers
         }
 
         [HttpPut("/api/{collection}")]
-        public async Task<IActionResult> Put(CollectionEnum collection, [FromBody]string value)
+        public async Task<IActionResult> Put(CollectionEnum collection)
         {
             try
             {
@@ -151,7 +151,13 @@ namespace API.Controllers
 
                 // TODO authorization
 
-                var bson = BsonDocument.Parse(value);
+                string json = null;
+                using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
+                {
+                    json = await reader.ReadToEndAsync();
+                }
+
+                var bson = BsonDocument.Parse(json);
 
                 if (!await collectionRepo.Update(collection, bson))
                 {

@@ -64,7 +64,7 @@ namespace API.Services
 
             foreach (var item in list)
             {
-                SimplifyId(item);
+                UnpackId(item);
             }
 
             list.AddRange(await ListFallback(collection, count, fromModified));
@@ -122,29 +122,13 @@ namespace API.Services
                 {
                     try
                     {
-                        SimplifyId(fallbackDoc);
+                        UnpackId(fallbackDoc);
 
-                        if (collection == CollectionEnum.entries)
+                        var modified = GetModifiedEpoch(collection, fallbackDoc);
+                        if (modified.HasValue)
                         {
-                            long dateEpoch = (long)fallbackDoc.GetValue(Const.DATE_ELEMENT).AsDouble;
-                            if (!fallbackDoc.Contains(Const.MODIFIED_ELEMENT))
-                            {
-                                fallbackDoc.Add(Const.MODIFIED_ELEMENT, dateEpoch);
-                            }
+                            SetDate(fallbackDoc, Const.MODIFIED_ELEMENT, modified);
                         }
-                        else
-                        {
-                            string createdAtString = fallbackDoc.GetValue(Const.CREATED_AT_ELEMENT).AsString;
-                            DateTime createdAt;
-                            if (!DateTime.TryParse(createdAtString, out createdAt))
-                                continue;
-
-                            if (!fallbackDoc.Contains(Const.MODIFIED_ELEMENT))
-                            {
-                                fallbackDoc.Add(Const.MODIFIED_ELEMENT, DateTimeHelper.ToEpoch(createdAt));
-                            }
-                        }
-
                         list.Add(fallbackDoc);
                     }
                     catch (Exception ex)
@@ -179,7 +163,7 @@ namespace API.Services
             foreach (var valueDeleted in listDeleted)
             {
                 var bsonDeleted = valueDeleted.Value.AsBsonDocument;
-                SimplifyId(bsonDeleted);
+                UnpackId(bsonDeleted);
 
                 listExisting.Add(bsonDeleted);
             }
@@ -194,15 +178,23 @@ namespace API.Services
             var items = await col.FindAsync(filter_id);
 
             var doc = items.FirstOrDefault();
+            if (doc == null)
+                return null;
 
-            SimplifyId(doc);
+            UnpackId(doc);
+
+            var modified = GetModifiedEpoch(collection, doc);
+            if (modified.HasValue)
+            {
+                SetDate(doc, Const.MODIFIED_ELEMENT, modified);
+            }
 
             return doc;
         }
 
         public async Task<string> Create(CollectionEnum collection, BsonDocument doc)
         {
-            SetModified(doc);
+            SetDate(doc, Const.MODIFIED_ELEMENT, DateTime.Now);
 
             var col = mongoDB.GetCollection<BsonDocument>(collection.ToString());
 
@@ -215,12 +207,18 @@ namespace API.Services
 
         public async Task<bool> Update(CollectionEnum collection, BsonDocument doc)
         {
-            SetModified(doc);
-            SetUpdated(doc);
+            var modified = GetModifiedEpoch(collection, doc);
+            if (modified.HasValue)
+            {
+                SetDate(doc, Const.CREATED_ELEMENT, modified);
+            }
+
+            SetDate(doc, Const.MODIFIED_ELEMENT, DateTime.Now);
+            PackId(doc);
 
             var col = mongoDB.GetCollection<BsonDocument>(collection.ToString());
 
-            var filter_id = Builders<BsonDocument>.Filter.Eq(Const.ID, doc.GetValue(Const.ID).AsObjectId);
+            var filter_id = Builders<BsonDocument>.Filter.Eq(Const.ID, new ObjectId(doc.GetValue(Const.ID).ToString()));
 
             var result = await col.FindOneAndReplaceAsync(filter_id, doc);
 
@@ -244,24 +242,38 @@ namespace API.Services
                 return alreadyDeleted.Any();
             }
 
-            SimplifyId(documentToDelete);
+            UnpackId(documentToDelete);
 
-            SetModified(documentToDelete);
-            SetDeleted(documentToDelete);
+            var modified = GetModifiedEpoch(collection, documentToDelete);
+            if (modified.HasValue)
+            {
+                SetDate(documentToDelete, Const.DELETED_ELEMENT, modified);
+            }
+
+            SetDate(documentToDelete, Const.MODIFIED_ELEMENT, DateTime.Now);
 
             var deletionRecord = new BsonDocument {
                 { Const.ID, objectId },
                 { Const.COLLECTION_ELEMENT, collection.ToString() },
                 { Const.DELETED_ELEMENT, documentToDelete },
-                { Const.MODIFIED_ELEMENT, documentToDelete.GetValue(Const.MODIFIED_ELEMENT) }
             };
+            SetDate(deletionRecord, Const.MODIFIED_ELEMENT, DateTime.Now);
 
             await colDeleted.InsertOneAsync(deletionRecord);
 
             return true;
         }
 
-        private void SimplifyId(BsonDocument doc)
+        private FilterDefinition<BsonDocument> AddFilter(FilterDefinition<BsonDocument> filter,
+            FilterDefinition<BsonDocument> newFilterClause)
+        {
+            return
+                filter == null
+                    ? newFilterClause
+                    : filter & newFilterClause;
+        }
+
+        private void UnpackId(BsonDocument doc)
         {
             if (doc.Contains(Const.ID))
             {
@@ -274,30 +286,53 @@ namespace API.Services
             }
         }
 
-        private FilterDefinition<BsonDocument> AddFilter(FilterDefinition<BsonDocument> filter,
-            FilterDefinition<BsonDocument> newFilterClause)
+        private void PackId(BsonDocument doc)
         {
-            return
-                filter == null
-                    ? newFilterClause
-                    : filter & newFilterClause;
+            if (doc.Contains(Const.ID))
+            {
+                BsonValue idValue = doc.GetValue(Const.ID);
+                if (idValue.IsString)
+                {
+                    doc.Remove(Const.ID);
+                    doc.Set(Const.ID, new ObjectId(idValue.AsString));
+                }
+            }
         }
 
-        private void SetModified(BsonDocument bson)
+        private long? GetModifiedEpoch(CollectionEnum collection, BsonDocument doc)
         {
-            BsonElement el = new BsonElement(Const.MODIFIED_ELEMENT, DateTimeHelper.ToEpoch(DateTime.Now));
+            if (doc.Contains(Const.MODIFIED_ELEMENT))
+            {
+                return doc[Const.MODIFIED_ELEMENT].AsInt64;
+            }
+
+            if (collection == CollectionEnum.entries && doc.Contains(Const.DATE_ELEMENT))
+            {
+                return (long)doc.GetValue(Const.DATE_ELEMENT).AsDouble;
+            }
+
+            if (doc.Contains(Const.CREATED_AT_ELEMENT))
+            {
+                string createdAtString = doc.GetValue(Const.CREATED_AT_ELEMENT).AsString;
+                DateTime createdAt;
+                if (DateTime.TryParse(createdAtString, out createdAt))
+                {
+                    return DateTimeHelper.ToEpoch(createdAt);
+                }
+            }
+
+            return null;
+        }
+
+        private void SetDate(BsonDocument bson, string elementName, DateTime? date)
+        {
+            BsonElement el = new BsonElement(elementName, DateTimeHelper.ToEpoch(date));
             bson.SetElement(el);
         }
 
-        private void SetUpdated(BsonDocument bson)
+        private void SetDate(BsonDocument bson, string elementName, long? epoch)
         {
-            BsonElement el = new BsonElement(Const.UPDATED_ELEMENT, DateTimeHelper.ToEpoch(DateTime.Now));
-            bson.SetElement(el);
-        }
-
-        private void SetDeleted(BsonDocument bson)
-        {
-            BsonElement el = new BsonElement(Const.DELETED_ELEMENT, DateTimeHelper.ToEpoch(DateTime.Now));
+            BsonElement el = new BsonElement(elementName, epoch);
             bson.SetElement(el);
         }
     }

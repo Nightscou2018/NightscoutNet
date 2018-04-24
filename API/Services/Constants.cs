@@ -14,7 +14,9 @@ namespace API.Services
 
         public const string MODIFIED_ELEMENT = "modified";
 
-        public const string UPDATED_ELEMENT = "updated";
+        public const string CREATED_ELEMENT = "created";
+
+        public const string DELETED_ELEMENT = "deleted";
 
         public const string CREATED_AT_ELEMENT = "created_at";
 
@@ -23,8 +25,6 @@ namespace API.Services
         public const string DATESTRING_ELEMENT = "dateString";
 
         public static string COLLECTION_ELEMENT = "collection";
-
-        public const string DELETED_ELEMENT = "deleted";
 
         public static readonly char[] PARAM_SEPARATORS = new char[] { ',', ';', '|' };
 
