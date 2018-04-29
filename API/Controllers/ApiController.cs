@@ -96,7 +96,7 @@ namespace API.Controllers
                     {
                         collection = (CollectionEnum)Enum.Parse(typeof(CollectionEnum), inElement.Name);
                         var colParams = inElement.Value.AsBsonDocument;
-                        fromMs = colParams.GetValue(Const.FROM).AsInt64;
+                        fromMs = long.Parse(colParams.GetValue(Const.FROM).ToString());
                         if (colParams.Contains(Const.COUNT))
                         {
                             specificCount = colParams.GetValue(Const.COUNT).AsInt32;
