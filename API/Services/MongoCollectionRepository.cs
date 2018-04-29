@@ -264,6 +264,99 @@ namespace API.Services
             return true;
         }
 
+        public async Task<BsonDocument> GetLastProfileSwitch()
+        {
+            var collectionEnum = CollectionEnum.treatments;
+
+            var col = mongoDB.GetCollection<BsonDocument>(collectionEnum.ToString());
+
+            var filter = Builders<BsonDocument>.Filter.Eq(Const.EVENT_TYPE, Const.PROFILE_SWITCH);
+
+            var items = await col.Find(filter)
+                .SortByDescending(bson => bson[Const.CREATED_AT_ELEMENT])
+                .Limit(1)
+                .ToListAsync();
+
+            var doc = items.FirstOrDefault();
+            if (doc == null)
+                return null;
+
+            UnpackId(doc);
+
+            var created = GetCreatedEpoch(collectionEnum, doc);
+            if (created.HasValue)
+            {
+                SetDate(doc, Const.MODIFIED_ELEMENT, created);
+            }
+
+            return doc;
+        }
+
+        public async Task<BsonDocument> FindDuplicate(CollectionEnum collectionEnum, BsonDocument doc)
+        {
+            var col = mongoDB.GetCollection<BsonDocument>(collectionEnum.ToString());
+
+            var builder = Builders<BsonDocument>.Filter;
+            FilterDefinition<BsonDocument> filter = null;
+
+            if (doc.Contains(Const.ID))
+            {
+                string id = doc.GetValue(Const.ID).AsString;
+
+                filter = AddFilter(filter, builder.Eq(Const.ID, new ObjectId(id)));
+            }
+
+            if (collectionEnum == CollectionEnum.entries && doc.Contains(Const.DATE_ELEMENT))
+            {
+                double date = doc.GetValue(Const.DATE_ELEMENT).AsInt64;
+
+                filter = AddFilter(filter, builder.Gt(Const.DATE_ELEMENT, date - 1000));
+                filter = AddFilter(filter, builder.Lt(Const.DATE_ELEMENT, date + 1000));
+            }
+
+            if (filter == null)
+                return null;
+
+            var list = await col.Find(filter)    
+                .Limit(1)
+                .ToListAsync();
+
+            if (list.Count > 0)
+            {
+                var existingDoc = list[0];
+                UnpackId(existingDoc);
+                return existingDoc;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public async Task<BsonDocument> GetLastProfilesDocument()
+        {
+            var col = mongoDB.GetCollection<BsonDocument>(CollectionEnum.profile.ToString());
+
+            var builder = Builders<BsonDocument>.Filter;
+            FilterDefinition<BsonDocument> filter = null;
+
+            var list = await col.Find(filter ?? new BsonDocument())
+                .SortByDescending(bson => bson[Const.START_DATE])
+                .Limit(1)
+                .ToListAsync();
+
+            if (list.Count > 0)
+            {
+                var existingDoc = list[0];
+                UnpackId(existingDoc);
+                return existingDoc;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         private FilterDefinition<BsonDocument> AddFilter(FilterDefinition<BsonDocument> filter,
             FilterDefinition<BsonDocument> newFilterClause)
         {

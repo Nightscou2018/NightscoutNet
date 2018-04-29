@@ -20,14 +20,20 @@ namespace API.Services
     {
         void Init();
 
-        Task<List<BsonDocument>> List(CollectionEnum entity, DateTime? fromModified, int? count, bool includeDeleted);
+        Task<List<BsonDocument>> List(CollectionEnum collectionEnum, DateTime? fromModified, int? count, bool includeDeleted);
 
-        Task<BsonDocument> Get(CollectionEnum entity, string id);
+        Task<BsonDocument> Get(CollectionEnum collectionEnum, string id);
 
-        Task<string> Create(CollectionEnum entity, BsonDocument bson);
+        Task<string> Create(CollectionEnum collectionEnum, BsonDocument bson);
 
-        Task<bool> Update(CollectionEnum entity, BsonDocument doc);
+        Task<bool> Update(CollectionEnum collectionEnum, BsonDocument doc);
 
-        Task<bool> Delete(CollectionEnum entity, string id);
+        Task<bool> Delete(CollectionEnum collectionEnum, string id);
+
+        Task<BsonDocument> FindDuplicate(CollectionEnum collectionEnum, BsonDocument doc);
+
+        Task<BsonDocument> GetLastProfileSwitch();
+
+        Task<BsonDocument> GetLastProfilesDocument();
     }
 }

@@ -30,6 +30,12 @@ namespace API.Services
 
         public static string COLLECTION_ELEMENT = "collection";
 
+        public static string EVENT_TYPE = "eventType";
+
+        public static string PROFILE_SWITCH = "Profile Switch";
+
+        public static string START_DATE = "startDate";
+
         public static readonly char[] PARAM_SEPARATORS = new char[] { ',', ';', '|' };
 
         public static readonly DateTime MIN_DATE = new DateTime(1900, 1, 1);

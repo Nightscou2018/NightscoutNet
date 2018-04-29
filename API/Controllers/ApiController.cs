@@ -23,6 +23,32 @@ namespace API.Controllers
             this.collectionRepo = collectionRepo;
         }
 
+        [HttpGet("/api/status")]
+        public async Task<IActionResult> Status()
+        {
+            // TODO authorization
+
+            var bson = new BsonDocument();
+            var lastProfileSwitch = await collectionRepo.GetLastProfileSwitch();
+            bson.Add("status", "ok");
+            bson.Add("serverTime", DateTimeHelper.ToEpoch(DateTime.Now));
+
+            var lastProfileDoc = await collectionRepo.GetLastProfilesDocument();
+            if (lastProfileDoc != null)
+            {
+                var profilesList = new List<BsonDocument> { lastProfileDoc };
+                var profileElement = new BsonDocument { { CollectionEnum.profile.ToString(), new BsonArray(profilesList) } };
+                bson.AddRange(profileElement);
+            }
+
+            if (lastProfileSwitch != null && lastProfileSwitch.Contains("profile"))
+            {
+                bson.Add("activeProfile", lastProfileSwitch.GetValue("profile").AsString);
+            }
+
+            return Content(bson.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
+        }
+
         [HttpGet("/api/{collection}")]
         public async Task<IActionResult> Get(CollectionEnum collection, int? count, DateTime? fromDate, long? fromMs)
         {
@@ -84,6 +110,14 @@ namespace API.Controllers
                     var list = await collectionRepo.List(collection, DateTimeHelper.FromEpoch(fromMs), 
                         specificCount ?? count, includeDeleted: true);
 
+                    // if any change in profiles
+                    if (collection == CollectionEnum.profile && list.Count > 0)
+                    {
+                        // let's get the last profile document always
+                        var lastProfileDoc = await collectionRepo.GetLastProfilesDocument();
+                        list = new List<BsonDocument> { lastProfileDoc };
+                    }
+
                     if (list.Count > 0)
                     {
                         var outElement = new BsonDocument { { collection.ToString(), new BsonArray(list) } };
@@ -137,6 +171,12 @@ namespace API.Controllers
                 // TODO authorization
 
                 var bson = BsonDocument.Parse(await ReadBody());
+
+                var existingDoc = await collectionRepo.FindDuplicate(collection, bson);
+                if (existingDoc != null)
+                {
+                    return Content(existingDoc.ToJson(jsonWriterSettings), JSON_CONTENT_TYPE);
+                }
 
                 var objectId = await collectionRepo.Create(collection, bson);
 
