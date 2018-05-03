@@ -41,5 +41,7 @@ namespace API.Services
         public static readonly DateTime MIN_DATE = new DateTime(1900, 1, 1);
 
         public static string DATE_WEB_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'";
+
+        public static string API_SECRET_HEADER = "api-secret";
     }
 }

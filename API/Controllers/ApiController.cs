@@ -16,17 +16,20 @@ namespace API.Controllers
     {
         private const string JSON_CONTENT_TYPE = "application/json";
         private ICollectionRepository collectionRepo;
+        private IAuthorization authorization;
         JsonWriterSettings jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
 
-        public ApiController(ICollectionRepository collectionRepo)
+        public ApiController(ICollectionRepository collectionRepo, IAuthorization authorization)
         {
             this.collectionRepo = collectionRepo;
+            this.authorization = authorization;
         }
 
         [HttpGet("/api/status")]
         public async Task<IActionResult> Status()
         {
-            // TODO authorization
+            if (!Authorize())
+                return Unauthorized();
 
             var bson = new BsonDocument();
             var lastProfileSwitch = await collectionRepo.GetLastProfileSwitch();
@@ -52,7 +55,8 @@ namespace API.Controllers
         [HttpGet("/api/{collection}")]
         public async Task<IActionResult> Get(CollectionEnum collection, int? count, DateTime? fromDate, long? fromMs)
         {
-            // TODO authorization
+            if (!Authorize())
+                return Unauthorized();
 
             if (collection == CollectionEnum.undefined)
                 return NotFound();
@@ -76,7 +80,8 @@ namespace API.Controllers
         {
             try
             {
-                // TODO authorization
+                if (!Authorize())
+                    return Unauthorized();
 
                 var outBson = new BsonDocument();
                 count = count ?? Const.DEFAULT_COUNT;
@@ -136,12 +141,13 @@ namespace API.Controllers
         [HttpGet("/api/{collection}/{id}")]
         public async Task<IActionResult> Get(CollectionEnum collection, string id)
         {
+            if (!Authorize())
+                return Unauthorized();
+
             try
             {
                 if (collection == CollectionEnum.undefined)
                     return NotFound();
-
-                // TODO authorization
 
                 var bson = await collectionRepo.Get(collection, id);
 
@@ -163,6 +169,9 @@ namespace API.Controllers
         [HttpPost("/api/{collection}")]
         public async Task<IActionResult> Post(CollectionEnum collection)
         {
+            if (!Authorize())
+                return Unauthorized();
+
             try
             {
                 if (collection == CollectionEnum.undefined)
@@ -194,12 +203,13 @@ namespace API.Controllers
         [HttpPut("/api/{collection}")]
         public async Task<IActionResult> Put(CollectionEnum collection)
         {
+            if (!Authorize())
+                return Unauthorized();
+
             try
             {
                 if (collection == CollectionEnum.undefined)
                     return NotFound();
-
-                // TODO authorization
 
                 var bson = BsonDocument.Parse(await ReadBody());
 
@@ -220,12 +230,13 @@ namespace API.Controllers
         [HttpDelete("/api/{collection}/{id}")]
         public async Task<IActionResult> Delete(CollectionEnum collection, string id, bool force = false)
         {
+            if (!Authorize())
+                return Unauthorized();
+
             try
             {
                 if (collection == CollectionEnum.undefined)
                     return NotFound();
-
-                // TODO authorization
 
                 if (!await collectionRepo.Delete(collection, id))
                 {
@@ -240,13 +251,22 @@ namespace API.Controllers
             }
         }
 
-
         private async Task<string> ReadBody()
         {
             using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
             {
                 return await reader.ReadToEndAsync();
             }
+        }
+
+        private bool Authorize()
+        {
+            if (!Request.Headers.ContainsKey(Const.API_SECRET_HEADER))
+                return false;
+
+            string givenHash = Request.Headers[Const.API_SECRET_HEADER];
+
+            return authorization.CheckHash(givenHash);
         }
     }
 }

@@ -26,6 +26,7 @@ namespace API
         {
             services.AddMvc();
             services.AddSingleton<ICollectionRepository>(s => new MongoCollectionRepository(Configuration["MongoURL"]));
+            services.AddSingleton<IAuthorization>(s => new Authorization(Configuration["ApiSecret"]));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
